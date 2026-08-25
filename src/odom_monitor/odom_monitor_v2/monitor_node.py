@@ -11,12 +11,21 @@ class OdomMonitor(Node):
     def __init__(self):
         super().__init__('odom_status_updater')
 
-        self.odom_ = self.create_subscription( Odometry, "/odom", self.odom_callback, 10)
-        self.gz_odom = self.create_subscription( Odometry, '/gz_odom', self.gz_odom_callback, 10)
+        self.declare_parameter("odom_topic", '/odom')
+        self.declare_parameter("gz_topic", '/gz_odom')
+        self.declare_parameter("drift_threshold", 0.2)
+
+        self.odom_topic = self.get_parameter("odom_topic").value
+        self.gz_topic = self.get_parameter("gz_topic").value
+        self.drift_threshold = self.get_parameter("drift_threshold").value
+
+        self.odom_ = self.create_subscription( Odometry, self.odom_topic, self.odom_callback, 10)
+        self.gz_odom = self.create_subscription( Odometry, self.gz_topic, self.gz_odom_callback, 10)
 
         self.latest_odom = None
         self.latest_gz = None
         self.drift = 0.0
+        self.max_drift = 0.0
 
         self.timer_ = self.create_timer(1.0, self.cal_drift)
 
@@ -43,17 +52,22 @@ class OdomMonitor(Node):
 
         self.drift = math.sqrt((x_gz - x_odom)**2 + (y_gz - y_odom)**2)
 
-        # self.get_logger().info(f"The currwent drift is : {self.drift}")
+        if self.drift > self.max_drift: 
+            self.max_drift = self.drift
+
+        self.get_logger().info(f"The current drift is : {self.drift}")
 
         self.updater_.force_update()
 
     def check_diagnostics(self, stat):
-        if self.drift > 0.2:
+        if self.drift > self.drift_threshold:
             stat.summary(DiagnosticStatus.ERROR, "High Odometry Drift Detected!")
         else:
             stat.summary(DiagnosticStatus.OK, "Odometry Normal")
 
         stat.add("Drift Distance(m) ", str(self.drift))
+
+        stat.add("Max Drift(m): ", str(self.max_drift))
 
         return stat
 
