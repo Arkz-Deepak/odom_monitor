@@ -5,7 +5,9 @@ import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
 import diagnostic_updater
-from diagnostic_msgs.msg import DiagnosticStatus 
+from diagnostic_msgs.msg import DiagnosticStatus
+from visualization_msgs.msg import Marker, MarkerArray 
+from geometry_msgs.msg import Point
 
 class OdomMonitor(Node):
     def __init__(self):
@@ -21,6 +23,7 @@ class OdomMonitor(Node):
 
         self.odom_ = self.create_subscription( Odometry, self.odom_topic, self.odom_callback, 10)
         self.gz_odom = self.create_subscription( Odometry, self.gz_topic, self.gz_odom_callback, 10)
+        self.vis_pub_ = self.create_publisher(MarkerArray, "/drift_visuals", 10)
 
         self.latest_odom = None
         self.latest_gz = None
@@ -52,6 +55,8 @@ class OdomMonitor(Node):
 
         self.drift = math.sqrt((x_gz - x_odom)**2 + (y_gz - y_odom)**2)
 
+        self.publish_marker(x_odom, y_odom, x_gz, y_gz)
+
         if self.drift > self.max_drift: 
             self.max_drift = self.drift
 
@@ -70,6 +75,52 @@ class OdomMonitor(Node):
         stat.add("Max Drift(m): ", str(self.max_drift))
 
         return stat
+
+    def publish_marker(self, x_odom, y_odom, x_gz, y_gz):
+        marker = Marker()
+        marker.header.frame_id = 'odom'
+        marker.header.stamp = self.get_clock().now().to_msg()
+        marker.ns = "drift_line"
+        marker.id = 0
+        marker.type = Marker.SPHERE_LIST  # Bypasses the line shader bug
+        marker.action = Marker.ADD
+        
+        # ... (keep your pose orientation exactly as it is) ...
+        
+        # Give the spheres a 10cm diameter in all 3 dimensions
+        marker.scale.x = 0.1 
+        marker.scale.y = 0.1
+        marker.scale.z = 0.1
+        
+        # ... (keep your colors and points exactly the same) ...
+        
+        # 1. Fully define the base pose (RViz demands this)
+        marker.pose.position.x = 0.0
+        marker.pose.position.y = 0.0
+        marker.pose.position.z = 0.0
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 1.0 
+        
+        # 2. Make it thick and explicitly set float colors
+        marker.scale.x = 0.1 
+        marker.color.r = 1.0
+        marker.color.g = 0.0
+        marker.color.b = 0.0
+        marker.color.a = 1.0 
+
+        # 3. Force the coordinates into floats and lift it 5cm
+        point_odom = Point(x=float(x_odom), y=float(y_odom), z=0.05)
+        point_gz = Point(x=float(x_gz), y=float(y_gz), z=0.05)
+
+        marker.points = [point_odom, point_gz]
+
+        marker_array = MarkerArray()
+        marker_array.markers.append(marker)
+
+        self.vis_pub_.publish(marker_array)
+
 
 def main(args =None):
     rclpy.init(args = args)

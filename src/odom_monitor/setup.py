@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'odom_monitor_v1'
+package_name = 'odom_monitor_v3'
 
 setup(
     name=package_name,
@@ -24,7 +24,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            "odom_drift_updater = odom_monitor_v1.monitor_node:main",
+            "odom_drift_updater_v3 = odom_monitor_v3.monitor_node:main",
+            "slip_tester = odom_monitor_v3.slip_tester:main",
         ],
     },
 )
