@@ -8,6 +8,8 @@ import diagnostic_updater
 from diagnostic_msgs.msg import DiagnosticStatus
 from visualization_msgs.msg import Marker, MarkerArray 
 from geometry_msgs.msg import Point
+import csv
+from geometry_msgs.msg import Twist
 
 class OdomMonitor(Node):
     def __init__(self):
@@ -21,6 +23,7 @@ class OdomMonitor(Node):
         self.gz_topic = self.get_parameter("gz_topic").value
         self.drift_threshold = self.get_parameter("drift_threshold").value
 
+        self.cmd_pub = self.create_publisher(Twist, '/interlock_cmd_vel', 10)
         self.odom_ = self.create_subscription( Odometry, self.odom_topic, self.odom_callback, 10)
         self.gz_odom = self.create_subscription( Odometry, self.gz_topic, self.gz_odom_callback, 10)
         self.vis_pub_ = self.create_publisher(MarkerArray, "/drift_visuals", 10)
@@ -30,7 +33,7 @@ class OdomMonitor(Node):
         self.drift = 0.0
         self.max_drift = 0.0
 
-        self.timer_ = self.create_timer(1.0, self.cal_drift)
+        self.timer_ = self.create_timer(0.1, self.cal_drift)
 
         self.updater_ = diagnostic_updater.Updater(self)
         self.updater_.setHardwareID("odom_monitor")
@@ -55,12 +58,25 @@ class OdomMonitor(Node):
 
         self.drift = math.sqrt((x_gz - x_odom)**2 + (y_gz - y_odom)**2)
 
+        if self.drift > self.drift_threshold:
+            self.get_logger().error("SAFETY INTERLOCK TRIGGERED! BRAKES APPLIED!")
+            
+            # Create a zero-velocity message and publish it
+            stop_msg = Twist()
+            self.cmd_pub.publish(stop_msg)
+
         self.publish_marker(x_odom, y_odom, x_gz, y_gz)
 
         if self.drift > self.max_drift: 
             self.max_drift = self.drift
 
         self.get_logger().info(f"The current drift is : {self.drift}")
+
+        # Log data to the CSV
+        with open('drift_benchmark.csv', 'a', newline='') as f:
+            writer = csv.writer(f)
+            # Write: ROS Time, Odom X, Gz X, Current Drift, Max Drift
+            writer.writerow([self.get_clock().now().nanoseconds, x_odom, x_gz, self.drift, self.max_drift])
 
         self.updater_.force_update()
 
