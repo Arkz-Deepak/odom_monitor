@@ -1,0 +1,13 @@
+# ROS 2 build directories
+build/
+install/
+log/
+
+# IDE & Editor settings
+.vscode/
+.idea/
+
+# Python cache & build files
+__pycache__/
+*.pyc
+*.egg-info/
