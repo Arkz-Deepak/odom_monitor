@@ -7,7 +7,7 @@ from launch_ros.actions import Node
 import xacro
 
 def generate_launch_description():
-    pkg_name = 'odom_monitor_v5' # Make sure this matches your package name!
+    pkg_name = 'odom_monitor' # Make sure this matches your package name!
     pkg_path = get_package_share_directory(pkg_name)
 
     # 1. Process the URDF file
@@ -73,5 +73,5 @@ def generate_launch_description():
         spawn_entity,
         gz_bridge,
         rqt_dashboard,
-        twist_mux_node
+        # twist_mux_node
     ])

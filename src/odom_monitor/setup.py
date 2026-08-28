@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 import os
 from glob import glob
 
-package_name = 'odom_monitor_v5'
+package_name = 'odom_monitor'
 
 setup(
     name=package_name,
@@ -29,8 +29,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            "odom_drift_updater_v5 = odom_monitor_v4.monitor_node:main",
-            "slip_tester = odom_monitor_v5.slip_tester:main",
+            "odom_drift_updater = odom_monitor.monitor_node:main",
+            "slip_tester = odom_monitor.slip_tester:main",
         ],
     },
 )
