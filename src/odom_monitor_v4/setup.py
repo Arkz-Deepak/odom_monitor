@@ -1,6 +1,8 @@
 from setuptools import find_packages, setup
+import os
+from glob import glob
 
-package_name = 'odom_monitor_v3'
+package_name = 'odom_monitor_v4'
 
 setup(
     name=package_name,
@@ -10,6 +12,9 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*launch.[pxy][yma]*'))),
+        (os.path.join('share', package_name, 'urdf'), glob('urdf/*')),
+        (os.path.join('share', package_name, 'config'), glob('config/*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -24,8 +29,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            "odom_drift_updater_v3 = odom_monitor_v3.monitor_node:main",
-            "slip_tester = odom_monitor_v3.slip_tester:main",
+            "odom_drift_updater_v4 = odom_monitor_v4.monitor_node:main",
+            "slip_tester = odom_monitor_v4.slip_tester:main",
         ],
     },
 )

@@ -52,7 +52,7 @@ class OdomMonitor(Node):
 
         self.drift = math.sqrt((x_gz - x_odom)**2 + (y_gz - y_odom)**2)
 
-        if self.drift > self.drift_threshold: 
+        if self.drift > self.max_drift: 
             self.max_drift = self.drift
 
         self.get_logger().info(f"The current drift is : {self.drift}")
@@ -60,7 +60,7 @@ class OdomMonitor(Node):
         self.updater_.force_update()
 
     def check_diagnostics(self, stat):
-        if self.drift > self.max_drift:
+        if self.drift > self.drift_threshold:
             stat.summary(DiagnosticStatus.ERROR, "High Odometry Drift Detected!")
         else:
             stat.summary(DiagnosticStatus.OK, "Odometry Normal")
